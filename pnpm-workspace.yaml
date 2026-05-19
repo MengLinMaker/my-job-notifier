@@ -1,6 +1,7 @@
 packages:
-  - apps/**
-  - libs/**
+  - frontend/**
+  - backend/**
+  - lib/**
   - infra/**
 
 ### SUPPLY CHAIN SECURITY
