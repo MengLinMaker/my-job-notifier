@@ -46,13 +46,10 @@
             "!**/coverage",
             "!**/dist",
             "!**/node_modules",
-            "!**/.puppeteer",
             "!**/cdk.out",
-            "!.nx",
             "!**/src/routeTree.gen.ts",
-            "!.sst/*",
-            "**/sst-env.d.ts",
-            "!**/coverage"
+            "!**/coverage",
+            "!**/.output"
         ],
         "ignoreUnknown": true
     },
