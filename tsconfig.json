@@ -1,6 +1,6 @@
 {
     "compilerOptions": {
-        "jsx": "react",
+        "jsx": "react-jsx",
         /* Strictest Check */
         "strict": true,
         "allowUnusedLabels": false,
