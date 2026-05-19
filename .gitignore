@@ -1,0 +1,27 @@
+# ENV
+.env
+
+# Output
+dist
+.tanstack
+tsconfig.tsbuildinfo
+
+# Vite
+coverage
+.vitest-attachments
+
+# AWS
+cdk.out
+
+# Dependencies
+node_modules
+
+# Env
+.env*
+
+# System Files
+.DS_Store
+Thumbs.db
+
+# pnpm
+.pnpm-store

@@ -1,0 +1,19 @@
+packages:
+  - apps/**
+  - libs/**
+  - infra/**
+
+### SUPPLY CHAIN SECURITY
+saveExact: true # Do not use ranges
+
+trustPolicy: no-downgrade # Publish method must maintain security level
+trustPolicyIgnoreAfter: 40320 # Ignore after 28 days to relax security
+
+# Do not trust scripts
+ignoreScripts: true
+ignoreDepScripts: true
+blockExoticSubdeps: true # Do not trust suspicious network calls
+
+resolutionMode: highest
+minimumReleaseAgeIgnoreMissingTime: true
+minimumReleaseAge: 10080 # Install packages over 7 days old to prevent supply chain attacks.

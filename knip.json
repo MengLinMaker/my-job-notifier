@@ -1,0 +1,19 @@
+{
+    "$schema": "https://unpkg.com/knip@5/schema.json",
+    "ignoreBinaries": ["only-allow", "atlas", "migrate"],
+    "ignore": [
+        ".github/**/*",
+        "**/src/migration/*.ts",
+        "**/src/schema.ts",
+        "**/src/app.ts",
+        "**/migrate.ts",
+        "**/pwa-assets.config.ts",
+        "**/src/routeTree.gen.ts",
+        "**/src/components/ui/*.tsx"
+    ],
+    "ignoreDependencies": [
+        "tailwindcss",
+        "tw-animate-css",
+        "@fontsource-variable/roboto"
+    ]
+}
