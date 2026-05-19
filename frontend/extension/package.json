@@ -20,10 +20,12 @@
         "postinstall": "wxt prepare"
     },
     "dependencies": {
+        "@lib/lib-ui": "workspace:*",
         "react": "^19.2.4",
         "react-dom": "^19.2.4"
     },
     "devDependencies": {
+        "@tailwindcss/vite": "^4.1.18",
         "@types/react": "^19.2.14",
         "@types/react-dom": "^19.2.3",
         "@wxt-dev/module-react": "^1.1.5",
