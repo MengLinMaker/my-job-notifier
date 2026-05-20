@@ -49,7 +49,8 @@
             "!**/cdk.out",
             "!**/src/routeTree.gen.ts",
             "!**/coverage",
-            "!**/.output"
+            "!**/.output",
+            "!**/.wxt"
         ],
         "ignoreUnknown": true
     },
