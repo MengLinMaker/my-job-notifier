@@ -32,7 +32,8 @@ export default defineContentScript({
         browser.runtime.onMessage.addListener((message) => {
             if (message?.type === CANCEL_JOB_TRACKING_MESSAGE) {
                 isTrackingJobPostings = false
-                clearHighlights()
+                hoveredClassName = typeof message.className === 'string' ? message.className : null
+                applySelectedJobElementClass()
                 notifyHoveredClassPorts()
                 return
             }

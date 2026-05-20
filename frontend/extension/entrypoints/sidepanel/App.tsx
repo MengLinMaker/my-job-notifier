@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Button } from '@lib/lib-ui/components/button'
+import { cn } from '@lib/lib-ui/lib/utils'
 import { PencilSimpleIcon, XIcon } from '@phosphor-icons/react'
 import {
     CANCEL_JOB_TRACKING_MESSAGE,
@@ -22,8 +23,10 @@ function App() {
     const [origin, setOrigin] = useState<string | null>(null)
     const [tabId, setTabId] = useState<number | null>(null)
     const [hoveredClassName, setHoveredClassName] = useState<string | null>(null)
+    const [classNameBeforeEditing, setClassNameBeforeEditing] = useState<string | null>(null)
     const [isTracking, setIsTracking] = useState(false)
     const parsedUrl = getUrl(url)
+    const hasSelectedClass = Boolean(hoveredClassName)
 
     useEffect(() => {
         const loadActiveTab = () =>
@@ -37,6 +40,7 @@ function App() {
                     setUrl(tabUrl?.href ?? 'No URL available for this tab.')
                     setOrigin(tabOrigin)
                     setIsTracking(false)
+                    setClassNameBeforeEditing(null)
                     if (!tabOrigin) {
                         setHoveredClassName(null)
                         return
@@ -91,6 +95,7 @@ function App() {
             if (!isHoveredClassMessage(message)) return
             setHoveredClassName(message.className)
             setIsTracking(message.isTracking)
+            if (!message.isTracking) setClassNameBeforeEditing(null)
             if (origin && message.className && !message.isTracking) {
                 browser.storage.local.set({
                     [getJobElementClassStorageKey(origin)]: message.className,
@@ -102,9 +107,21 @@ function App() {
 
     function trackJobPostings() {
         if (!tabId) return
-        browser.tabs.sendMessage(tabId, {
-            type: isTracking ? CANCEL_JOB_TRACKING_MESSAGE : START_JOB_TRACKING_MESSAGE,
-        })
+        const nextIsTracking = !isTracking
+        const nextClassName = nextIsTracking ? null : classNameBeforeEditing
+
+        setClassNameBeforeEditing(nextIsTracking ? hoveredClassName : null)
+        setHoveredClassName(nextClassName)
+        setIsTracking(nextIsTracking)
+        browser.tabs
+            .sendMessage(tabId, {
+                type: isTracking ? CANCEL_JOB_TRACKING_MESSAGE : START_JOB_TRACKING_MESSAGE,
+                className: nextClassName,
+            })
+            .catch(() => {
+                setHoveredClassName(hoveredClassName)
+                setIsTracking(isTracking)
+            })
     }
 
     return (
@@ -148,16 +165,19 @@ function App() {
                         )}
                     </Button>
                 </div>
-                <p className="border border-border bg-muted p-2 font-mono text-xs wrap-anywhere">
+                <p
+                    className={cn(
+                        'border p-2 text-xs wrap-anywhere',
+                        hasSelectedClass
+                            ? 'border-border bg-muted font-mono'
+                            : 'border-destructive/50 bg-destructive/10 font-sans text-destructive',
+                    )}
+                >
                     {hoveredClassName ??
                         (isTracking ? (
-                            <span className="font-sans text-muted-foreground">
-                                Click on green bordered job element
-                            </span>
+                            <span>Hover and click on green bordered element</span>
                         ) : (
-                            <span className="font-sans text-muted-foreground">
-                                No job element selected, please edit
-                            </span>
+                            <span>No element selected, please edit</span>
                         ))}
                 </p>
             </section>
