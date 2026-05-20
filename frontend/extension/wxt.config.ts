@@ -10,6 +10,11 @@ export default defineConfig({
     },
     webExt: {
         chromiumProfile: '.wxt/chrome-profile',
+        chromiumPref: {
+            session: {
+                restore_on_startup: 1,
+            },
+        },
         keepProfileChanges: true,
     },
     vite: () => ({

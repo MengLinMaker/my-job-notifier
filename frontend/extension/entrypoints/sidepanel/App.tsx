@@ -108,7 +108,6 @@ function App() {
 
     return (
         <main className="grid gap-4 p-4">
-            <h1 className="text-lg font-medium">My Job Notifier</h1>
             <section className="grid gap-2" aria-labelledby="current-tab-heading">
                 <h2
                     id="current-tab-heading"
