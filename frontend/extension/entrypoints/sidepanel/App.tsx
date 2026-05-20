@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Button } from '@lib/lib-ui/components/button'
+import { PencilSimpleIcon, XIcon } from '@phosphor-icons/react'
 import {
     CANCEL_JOB_TRACKING_MESSAGE,
     HOVERED_CLASS_PORT,
@@ -127,8 +128,24 @@ function App() {
                     >
                         Job Element Class
                     </h2>
-                    <Button type="button" variant="outline" size="xs" onClick={trackJobPostings}>
-                        {isTracking ? 'Cancel' : '✎ Edit'}
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="xs"
+                        className="inline-flex items-center gap-1.5"
+                        onClick={trackJobPostings}
+                    >
+                        {isTracking ? (
+                            <>
+                                <XIcon aria-hidden size={14} />
+                                Cancel
+                            </>
+                        ) : (
+                            <>
+                                <PencilSimpleIcon aria-hidden size={14} />
+                                Edit
+                            </>
+                        )}
                     </Button>
                 </div>
                 <p className="border border-border bg-muted p-2 font-mono text-xs wrap-anywhere">
