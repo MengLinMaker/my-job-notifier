@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Button } from '@lib/lib-ui/components/button'
+import { HOVERED_CLASS_PORT } from '../../utils/messaging-contract'
 
 function getUrl(url: string) {
     try {
@@ -11,12 +11,15 @@ function getUrl(url: string) {
 
 function App() {
     const [url, setUrl] = useState('Loading current tab...')
+    const [tabId, setTabId] = useState<number | null>(null)
+    const [hoveredClassName, setHoveredClassName] = useState<string | null>(null)
     const parsedUrl = getUrl(url)
 
     useEffect(() => {
         browser.tabs
             .query({ active: true, currentWindow: true })
             .then(([tab]) => {
+                setTabId(tab?.id ?? null)
                 setUrl(tab?.url ?? 'No URL available for this tab.')
             })
             .catch((error) => {
@@ -24,6 +27,15 @@ function App() {
                 setUrl('Unable to read the current tab URL.')
             })
     }, [])
+
+    useEffect(() => {
+        if (!tabId) return
+        const port = browser.tabs.connect(tabId, { name: HOVERED_CLASS_PORT })
+        port.onMessage.addListener((message) => {
+            setHoveredClassName(message.className)
+        })
+        return () => port.disconnect()
+    }, [tabId])
 
     return (
         <main className="grid gap-4 p-4">
@@ -44,13 +56,17 @@ function App() {
                         </>
                     )}
                 </p>
-                <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => navigator.clipboard.writeText(url)}
+            </section>
+            <section className="grid gap-2" aria-labelledby="hovered-class-heading">
+                <h2
+                    id="hovered-class-heading"
+                    className="text-xs font-medium text-muted-foreground uppercase"
                 >
-                    Copy URL
-                </Button>
+                    Hovered Class
+                </h2>
+                <p className="border border-border bg-muted p-2 font-mono text-xs wrap-anywhere">
+                    {hoveredClassName ?? 'Hover a linked element on the page'}
+                </p>
             </section>
         </main>
     )
