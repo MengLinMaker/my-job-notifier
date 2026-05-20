@@ -1,5 +1,9 @@
 import * as cheerio from 'cheerio'
-import { HOVERED_CLASS_PORT } from '../utils/messaging-contract'
+import {
+    CANCEL_JOB_TRACKING_MESSAGE,
+    HOVERED_CLASS_PORT,
+    START_JOB_TRACKING_MESSAGE,
+} from '../utils/messaging-contract'
 
 const HOVER_STYLES_ID = 'my-job-notifier-hover-styles'
 const HOVERED_ATTRIBUTE = 'data-my-job-notifier-hovered'
@@ -8,6 +12,7 @@ const HOVERED_DATA_VALUE = 'true'
 const HOVERED_SELECTOR = `[${HOVERED_ATTRIBUTE}="${HOVERED_DATA_VALUE}"]`
 const SIMILAR_SELECTOR = `[${SIMILAR_ATTRIBUTE}="${HOVERED_DATA_VALUE}"]`
 let hoveredClassName: string | null = null
+let isTrackingJobPostings = false
 const hoveredClassPorts = new Set<Browser.runtime.Port>()
 
 export default defineContentScript({
@@ -15,30 +20,51 @@ export default defineContentScript({
     main() {
         injectHoverStyles()
         document.addEventListener('pointerover', highlightHoveredElement, { passive: true })
+        document.addEventListener('click', selectHoveredElement, true)
+        browser.runtime.onMessage.addListener((message) => {
+            if (message?.type === CANCEL_JOB_TRACKING_MESSAGE) {
+                isTrackingJobPostings = false
+                clearHighlights()
+                notifyHoveredClassPorts()
+                return
+            }
+
+            if (message?.type !== START_JOB_TRACKING_MESSAGE) return
+            isTrackingJobPostings = true
+            hoveredClassName = null
+            clearHighlights()
+            notifyHoveredClassPorts()
+        })
         browser.runtime.onConnect.addListener((port) => {
             if (port.name !== HOVERED_CLASS_PORT) return
 
             hoveredClassPorts.add(port)
-            port.postMessage({ className: hoveredClassName })
+            port.postMessage({ className: hoveredClassName, isTracking: isTrackingJobPostings })
             port.onDisconnect.addListener(() => hoveredClassPorts.delete(port))
         })
     },
 })
 
 function highlightHoveredElement(event: PointerEvent) {
-    document.querySelector<HTMLElement>(HOVERED_SELECTOR)?.removeAttribute(HOVERED_ATTRIBUTE)
-    document.querySelectorAll<HTMLElement>(SIMILAR_SELECTOR).forEach((element) => {
-        element.removeAttribute(SIMILAR_ATTRIBUTE)
-    })
+    if (!isTrackingJobPostings) return
+    clearHighlights()
     hoveredClassName = null
     if (event.target instanceof HTMLElement && containsLink(event.target)) {
         hoveredClassName = event.target.getAttribute('class')
         event.target.setAttribute(HOVERED_ATTRIBUTE, HOVERED_DATA_VALUE)
         highlightSimilarElements(event.target)
     }
-    hoveredClassPorts.forEach((port) => {
-        port.postMessage({ className: hoveredClassName })
-    })
+    notifyHoveredClassPorts()
+}
+
+function selectHoveredElement(event: MouseEvent) {
+    const hoveredElement = document.querySelector<HTMLElement>(HOVERED_SELECTOR)
+    if (!isTrackingJobPostings || !hoveredElement) return
+    event.preventDefault()
+    event.stopPropagation()
+    isTrackingJobPostings = false
+    hoveredClassName = hoveredElement.getAttribute('class')
+    notifyHoveredClassPorts()
 }
 
 function containsLink(element: HTMLElement) {
@@ -75,4 +101,17 @@ function injectHoverStyles() {
         }
     `
     document.documentElement.append(style)
+}
+
+function clearHighlights() {
+    document.querySelector<HTMLElement>(HOVERED_SELECTOR)?.removeAttribute(HOVERED_ATTRIBUTE)
+    document.querySelectorAll<HTMLElement>(SIMILAR_SELECTOR).forEach((element) => {
+        element.removeAttribute(SIMILAR_ATTRIBUTE)
+    })
+}
+
+function notifyHoveredClassPorts() {
+    hoveredClassPorts.forEach((port) => {
+        port.postMessage({ className: hoveredClassName, isTracking: isTrackingJobPostings })
+    })
 }
