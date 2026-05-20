@@ -8,6 +8,10 @@ export default defineConfig({
         name: 'My Job Notifier',
         permissions: ['activeTab', 'sidePanel', 'storage', 'tabs'],
     },
+    webExt: {
+        chromiumProfile: '.wxt/chrome-profile',
+        keepProfileChanges: true,
+    },
     vite: () => ({
         plugins: [tailwindcss()],
     }),
