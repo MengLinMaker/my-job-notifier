@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { Button } from '@lib/lib-ui/components/button'
-import './App.css'
 
 function App() {
     const [url, setUrl] = useState('Loading current tab...')
@@ -18,11 +17,15 @@ function App() {
     }, [])
 
     return (
-        <main className="app">
-            <h1>My Job Notifier</h1>
-            <section className="current-tab" aria-labelledby="current-tab-heading">
-                <h2 id="current-tab-heading">Current URL</h2>
-                <p className="url">{url}</p>
+        <main className="grid gap-4 p-4">
+            <h1 className="text-lg font-medium">My Job Notifier</h1>
+            <section className="grid gap-2" aria-labelledby="current-tab-heading">
+                <h2 id="current-tab-heading" className="text-xs font-medium text-muted-foreground uppercase">
+                    Current URL
+                </h2>
+                <p className="min-h-12 border border-border bg-muted p-3 text-sm [overflow-wrap:anywhere]">
+                    {url}
+                </p>
                 <Button type="button" variant="outline" onClick={() => navigator.clipboard.writeText(url)}>
                     Copy URL
                 </Button>
