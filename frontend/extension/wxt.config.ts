@@ -6,7 +6,7 @@ export default defineConfig({
     modules: ['@wxt-dev/module-react'],
     manifest: {
         name: 'My Job Notifier',
-        permissions: ['activeTab', 'sidePanel', 'tabs'],
+        permissions: ['activeTab', 'sidePanel', 'storage', 'tabs'],
     },
     vite: () => ({
         plugins: [tailwindcss()],

@@ -3,6 +3,8 @@ import { Button } from '@lib/lib-ui/components/button'
 import {
     CANCEL_JOB_TRACKING_MESSAGE,
     HOVERED_CLASS_PORT,
+    JOB_ELEMENT_CLASS_STORAGE_KEY_PREFIX,
+    SET_JOB_ELEMENT_CLASS_MESSAGE,
     START_JOB_TRACKING_MESSAGE,
 } from '../../utils/messaging-contract'
 
@@ -16,6 +18,7 @@ function getUrl(url: string) {
 
 function App() {
     const [url, setUrl] = useState('Loading current tab...')
+    const [origin, setOrigin] = useState<string | null>(null)
     const [tabId, setTabId] = useState<number | null>(null)
     const [hoveredClassName, setHoveredClassName] = useState<string | null>(null)
     const [isTracking, setIsTracking] = useState(false)
@@ -26,14 +29,40 @@ function App() {
             browser.tabs
                 .query({ active: true, currentWindow: true })
                 .then(([tab]) => {
+                    const tabUrl = getUrl(tab?.url ?? '')
+                    const tabOrigin = tabUrl?.origin ?? null
+
                     setTabId(tab?.id ?? null)
-                    setUrl(tab?.url ?? 'No URL available for this tab.')
-                    setHoveredClassName(null)
+                    setUrl(tabUrl?.href ?? 'No URL available for this tab.')
+                    setOrigin(tabOrigin)
                     setIsTracking(false)
+                    if (!tabOrigin) {
+                        setHoveredClassName(null)
+                        return
+                    }
+                    return browser.storage.local
+                        .get(getJobElementClassStorageKey(tabOrigin))
+                        .then((items) => {
+                            const storedClassName = items[getJobElementClassStorageKey(tabOrigin)]
+                            const className =
+                                typeof storedClassName === 'string' ? storedClassName : null
+
+                            setHoveredClassName(className)
+                            if (tab?.id && className) {
+                                browser.tabs
+                                    .sendMessage(tab.id, {
+                                        type: SET_JOB_ELEMENT_CLASS_MESSAGE,
+                                        className,
+                                    })
+                                    .catch(() => {})
+                            }
+                        })
                 })
                 .catch((error) => {
                     console.error('Failed to read active tab URL', error)
                     setUrl('Unable to read the current tab URL.')
+                    setOrigin(null)
+                    setHoveredClassName(null)
                 })
 
         const handleTabUpdated: Parameters<typeof browser.tabs.onUpdated.addListener>[0] = (
@@ -61,9 +90,14 @@ function App() {
             if (!isHoveredClassMessage(message)) return
             setHoveredClassName(message.className)
             setIsTracking(message.isTracking)
+            if (origin && message.className && !message.isTracking) {
+                browser.storage.local.set({
+                    [getJobElementClassStorageKey(origin)]: message.className,
+                })
+            }
         })
         return () => port.disconnect()
-    }, [tabId])
+    }, [origin, tabId])
 
     function trackJobPostings() {
         if (!tabId) return
@@ -80,16 +114,10 @@ function App() {
                     id="current-tab-heading"
                     className="text-xs font-medium text-muted-foreground uppercase"
                 >
-                    Current URL
+                    Settings for domain
                 </h2>
                 <p className="border border-border bg-muted p-2 text-sm wrap-anywhere">
-                    {parsedUrl && (
-                        <>
-                            <span className="font-medium text-blue-600">{parsedUrl.origin}</span>
-                            <span className="text-emerald-700">{parsedUrl.pathname}</span>
-                            <span className="text-rose-600">{parsedUrl.search}</span>
-                        </>
-                    )}
+                    {parsedUrl?.origin}
                 </p>
             </section>
             <section className="grid gap-2" aria-labelledby="job-element-class-heading">
@@ -119,6 +147,10 @@ function App() {
             </section>
         </main>
     )
+}
+
+function getJobElementClassStorageKey(origin: string) {
+    return `${JOB_ELEMENT_CLASS_STORAGE_KEY_PREFIX}${origin}`
 }
 
 function isHoveredClassMessage(

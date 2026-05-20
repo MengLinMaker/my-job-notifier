@@ -2,6 +2,8 @@ import * as cheerio from 'cheerio'
 import {
     CANCEL_JOB_TRACKING_MESSAGE,
     HOVERED_CLASS_PORT,
+    JOB_ELEMENT_CLASS_STORAGE_KEY_PREFIX,
+    SET_JOB_ELEMENT_CLASS_MESSAGE,
     START_JOB_TRACKING_MESSAGE,
 } from '../utils/messaging-contract'
 
@@ -14,17 +16,31 @@ const SIMILAR_SELECTOR = `[${SIMILAR_ATTRIBUTE}="${HOVERED_DATA_VALUE}"]`
 let hoveredClassName: string | null = null
 let isTrackingJobPostings = false
 const hoveredClassPorts = new Set<Browser.runtime.Port>()
+const highlightObserver = new MutationObserver(() => {
+    if (!hoveredClassName || isTrackingJobPostings) return
+    highlightElementsByClassName(hoveredClassName)
+})
 
 export default defineContentScript({
     matches: ['<all_urls>'],
     main() {
         injectHoverStyles()
+        loadSavedJobElementClass()
+        highlightObserver.observe(document.documentElement, { childList: true, subtree: true })
         document.addEventListener('pointerover', highlightHoveredElement, { passive: true })
         document.addEventListener('click', selectHoveredElement, true)
         browser.runtime.onMessage.addListener((message) => {
             if (message?.type === CANCEL_JOB_TRACKING_MESSAGE) {
                 isTrackingJobPostings = false
                 clearHighlights()
+                notifyHoveredClassPorts()
+                return
+            }
+
+            if (message?.type === SET_JOB_ELEMENT_CLASS_MESSAGE) {
+                isTrackingJobPostings = false
+                hoveredClassName = typeof message.className === 'string' ? message.className : null
+                applySelectedJobElementClass()
                 notifyHoveredClassPorts()
                 return
             }
@@ -67,6 +83,25 @@ function selectHoveredElement(event: MouseEvent) {
     notifyHoveredClassPorts()
 }
 
+function loadSavedJobElementClass() {
+    browser.storage.local.get(getJobElementClassStorageKey(location.origin)).then((items) => {
+        const storedClassName = items[getJobElementClassStorageKey(location.origin)]
+
+        hoveredClassName = typeof storedClassName === 'string' ? storedClassName : null
+        applySelectedJobElementClass()
+        notifyHoveredClassPorts()
+    })
+}
+
+function applySelectedJobElementClass() {
+    clearHighlights()
+    if (hoveredClassName) highlightElementsByClassName(hoveredClassName)
+}
+
+function getJobElementClassStorageKey(origin: string) {
+    return `${JOB_ELEMENT_CLASS_STORAGE_KEY_PREFIX}${origin}`
+}
+
 function containsLink(element: HTMLElement) {
     const $ = cheerio.load(element.outerHTML)
 
@@ -83,6 +118,14 @@ function highlightSimilarElements(target: HTMLElement) {
             element.getAttribute('class') === className &&
             containsLink(element)
         ) {
+            element.setAttribute(SIMILAR_ATTRIBUTE, HOVERED_DATA_VALUE)
+        }
+    })
+}
+
+function highlightElementsByClassName(className: string) {
+    document.querySelectorAll<HTMLElement>('[class]').forEach((element) => {
+        if (element.getAttribute('class') === className && containsLink(element)) {
             element.setAttribute(SIMILAR_ATTRIBUTE, HOVERED_DATA_VALUE)
         }
     })
