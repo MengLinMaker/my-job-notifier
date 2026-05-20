@@ -22,16 +22,36 @@ function App() {
     const parsedUrl = getUrl(url)
 
     useEffect(() => {
-        browser.tabs
-            .query({ active: true, currentWindow: true })
-            .then(([tab]) => {
-                setTabId(tab?.id ?? null)
-                setUrl(tab?.url ?? 'No URL available for this tab.')
-            })
-            .catch((error) => {
-                console.error('Failed to read active tab URL', error)
-                setUrl('Unable to read the current tab URL.')
-            })
+        const loadActiveTab = () =>
+            browser.tabs
+                .query({ active: true, currentWindow: true })
+                .then(([tab]) => {
+                    setTabId(tab?.id ?? null)
+                    setUrl(tab?.url ?? 'No URL available for this tab.')
+                    setHoveredClassName(null)
+                    setIsTracking(false)
+                })
+                .catch((error) => {
+                    console.error('Failed to read active tab URL', error)
+                    setUrl('Unable to read the current tab URL.')
+                })
+
+        const handleTabUpdated: Parameters<typeof browser.tabs.onUpdated.addListener>[0] = (
+            _tabId,
+            changeInfo,
+            tab,
+        ) => {
+            if (tab.active && changeInfo.url) loadActiveTab()
+        }
+
+        loadActiveTab()
+        browser.tabs.onActivated.addListener(loadActiveTab)
+        browser.tabs.onUpdated.addListener(handleTabUpdated)
+
+        return () => {
+            browser.tabs.onActivated.removeListener(loadActiveTab)
+            browser.tabs.onUpdated.removeListener(handleTabUpdated)
+        }
     }, [])
 
     useEffect(() => {
@@ -85,23 +105,33 @@ function App() {
                     </Button>
                 </div>
                 <p className="border border-border bg-muted p-2 font-mono text-xs wrap-anywhere">
-                    {hoveredClassName ?? (isTracking ? (
-                        <span className="font-sans text-muted-foreground">Click on green bordered job element</span>
-                    ) : (
-                        <span className="font-sans text-muted-foreground">
-                            No job element selected, please edit
-                        </span>
-                    ))}
+                    {hoveredClassName ??
+                        (isTracking ? (
+                            <span className="font-sans text-muted-foreground">
+                                Click on green bordered job element
+                            </span>
+                        ) : (
+                            <span className="font-sans text-muted-foreground">
+                                No job element selected, please edit
+                            </span>
+                        ))}
                 </p>
             </section>
         </main>
     )
 }
 
-function isHoveredClassMessage(value: unknown): value is { className: string | null; isTracking: boolean } {
-    return typeof value === 'object' && value !== null && 'className' in value && 'isTracking' in value
-        && (typeof value.className === 'string' || value.className === null)
-        && typeof value.isTracking === 'boolean'
+function isHoveredClassMessage(
+    value: unknown,
+): value is { className: string | null; isTracking: boolean } {
+    return (
+        typeof value === 'object' &&
+        value !== null &&
+        'className' in value &&
+        'isTracking' in value &&
+        (typeof value.className === 'string' || value.className === null) &&
+        typeof value.isTracking === 'boolean'
+    )
 }
 
 export default App
