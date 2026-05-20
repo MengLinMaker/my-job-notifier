@@ -23,7 +23,7 @@ function App() {
                 <h2 id="current-tab-heading" className="text-xs font-medium text-muted-foreground uppercase">
                     Current URL
                 </h2>
-                <p className="min-h-12 border border-border bg-muted p-3 text-sm [overflow-wrap:anywhere]">
+                <p className="border border-border bg-muted p-2 text-sm wrap-anywhere">
                     {url}
                 </p>
                 <Button type="button" variant="outline" onClick={() => navigator.clipboard.writeText(url)}>
