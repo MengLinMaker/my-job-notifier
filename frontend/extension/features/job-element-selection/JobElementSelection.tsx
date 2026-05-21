@@ -10,63 +10,43 @@ import {
 import { EditButton } from './components/EditButton'
 import { JobElementClassText } from './components/JobElementClassText'
 
-type JobElementSelectionProps = {
-    origin: string | null
-    tabId: number | null
-}
-
-export function JobElementSelection({ origin, tabId }: JobElementSelectionProps) {
+export function JobElementSelection(props: { origin: string | null; tabId: number | null }) {
     const [selectedClassName, setSelectedClassName] = useSyncedStorageState<string | null>(
-        origin ? JOB_ELEMENT_CLASS_STORAGE_KEY(origin) : null,
+        props.origin ? JOB_ELEMENT_CLASS_STORAGE_KEY(props.origin) : null,
         null,
     )
     const [hoveredClassName, setHoveredClassName] = useState<string | null>(null)
-    const [isTracking, setIsTracking] = useState(false)
-    const displayedClassName = isTracking ? hoveredClassName : selectedClassName
+    const [isEditing, setIsEditing] = useState(false)
+    const displayedClassName = isEditing ? hoveredClassName : selectedClassName
 
     useEffect(() => {
-        setIsTracking(false)
-        setHoveredClassName(null)
-        if (!tabId || !selectedClassName) return
-        browser.tabs
-            .sendMessage(tabId, {
-                type: SET_JOB_ELEMENT_CLASS_MESSAGE,
-                className: selectedClassName,
-            })
-            .catch(() => {})
-    }, [selectedClassName, tabId])
+        if (!props.tabId || isEditing || !selectedClassName) return
+        browser.tabs.sendMessage(props.tabId, {
+            type: SET_JOB_ELEMENT_CLASS_MESSAGE,
+            className: selectedClassName,
+        })
+    }, [isEditing, selectedClassName, props.tabId])
 
     useEffect(() => {
-        if (!tabId) return
-        const port = browser.tabs.connect(tabId, { name: HOVERED_CLASS_PORT })
-        port.onMessage.addListener((message) => {
-            if (!isHoveredClassMessage(message)) return
-            setIsTracking(message.isTracking)
-            if (message.isTracking) {
-                setHoveredClassName(message.className)
-                return
-            }
+        if (!props.tabId) return
+        const port = browser.tabs.connect(props.tabId, { name: HOVERED_CLASS_PORT })
+        port.onMessage.addListener((message: { className: string | null; isEditing: boolean }) => {
+            setIsEditing(message.isEditing)
+            if (message.isEditing) return setHoveredClassName(message.className)
             setHoveredClassName(null)
             setSelectedClassName(message.className)
         })
         return () => port.disconnect()
-    }, [setSelectedClassName, tabId])
+    }, [setSelectedClassName, props.tabId])
 
     function trackJobPostings() {
-        if (!tabId) return
-        const nextIsTracking = !isTracking
-
+        if (!props.tabId) return
         setHoveredClassName(null)
-        setIsTracking(nextIsTracking)
-        browser.tabs
-            .sendMessage(tabId, {
-                type: isTracking ? CANCEL_JOB_TRACKING_MESSAGE : START_JOB_TRACKING_MESSAGE,
-                className: selectedClassName,
-            })
-            .catch(() => {
-                setHoveredClassName(hoveredClassName)
-                setIsTracking(isTracking)
-            })
+        setIsEditing(!isEditing)
+        browser.tabs.sendMessage(props.tabId, {
+            type: isEditing ? CANCEL_JOB_TRACKING_MESSAGE : START_JOB_TRACKING_MESSAGE,
+            className: selectedClassName,
+        })
     }
 
     return (
@@ -78,22 +58,9 @@ export function JobElementSelection({ origin, tabId }: JobElementSelectionProps)
                 >
                     Job Element Class
                 </h2>
-                <EditButton isEditing={isTracking} onClick={trackJobPostings} />
+                <EditButton isEditing={isEditing} onClick={trackJobPostings} />
             </div>
-            <JobElementClassText jobElementClass={displayedClassName} isEditing={isTracking} />
+            <JobElementClassText jobElementClass={displayedClassName} isEditing={isEditing} />
         </section>
-    )
-}
-
-function isHoveredClassMessage(
-    value: unknown,
-): value is { className: string | null; isTracking: boolean } {
-    return (
-        typeof value === 'object' &&
-        value !== null &&
-        'className' in value &&
-        'isTracking' in value &&
-        (typeof value.className === 'string' || value.className === null) &&
-        typeof value.isTracking === 'boolean'
     )
 }

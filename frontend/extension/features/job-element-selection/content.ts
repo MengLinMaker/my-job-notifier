@@ -12,7 +12,7 @@ import {
 } from './contract'
 
 let hoveredClassName: string | null = null
-let isTrackingJobPostings = false
+let isEditingJobElement = false
 const hoveredClassPorts = new Set<Browser.runtime.Port>()
 
 export function defineJobElementSelectionContentScript() {
@@ -20,7 +20,7 @@ export function defineJobElementSelectionContentScript() {
         matches: ['<all_urls>'],
         main() {
             const highlightObserver = new MutationObserver(() => {
-                if (!hoveredClassName || isTrackingJobPostings) return
+                if (!hoveredClassName || isEditingJobElement) return
                 highlightElementsByClassName(hoveredClassName)
             })
 
@@ -31,7 +31,7 @@ export function defineJobElementSelectionContentScript() {
             document.addEventListener('click', selectHoveredElement, true)
             browser.runtime.onMessage.addListener((message) => {
                 if (message?.type === CANCEL_JOB_TRACKING_MESSAGE) {
-                    isTrackingJobPostings = false
+                    isEditingJobElement = false
                     hoveredClassName =
                         typeof message.className === 'string' ? message.className : null
                     applySelectedJobElementClass()
@@ -40,7 +40,7 @@ export function defineJobElementSelectionContentScript() {
                 }
 
                 if (message?.type === SET_JOB_ELEMENT_CLASS_MESSAGE) {
-                    isTrackingJobPostings = false
+                    isEditingJobElement = false
                     hoveredClassName =
                         typeof message.className === 'string' ? message.className : null
                     applySelectedJobElementClass()
@@ -49,7 +49,7 @@ export function defineJobElementSelectionContentScript() {
                 }
 
                 if (message?.type !== START_JOB_TRACKING_MESSAGE) return
-                isTrackingJobPostings = true
+                isEditingJobElement = true
                 hoveredClassName = null
                 clearHighlights()
                 notifyHoveredClassPorts()
@@ -58,7 +58,7 @@ export function defineJobElementSelectionContentScript() {
                 if (port.name !== HOVERED_CLASS_PORT) return
 
                 hoveredClassPorts.add(port)
-                port.postMessage({ className: hoveredClassName, isTracking: isTrackingJobPostings })
+                port.postMessage({ className: hoveredClassName, isEditing: isEditingJobElement })
                 port.onDisconnect.addListener(() => hoveredClassPorts.delete(port))
             })
         },
@@ -66,7 +66,7 @@ export function defineJobElementSelectionContentScript() {
 }
 
 function highlightHoveredElement(event: PointerEvent) {
-    if (!isTrackingJobPostings) return
+    if (!isEditingJobElement) return
     clearHighlights()
     hoveredClassName = null
     if (event.target instanceof HTMLElement && containsLink(event.target)) {
@@ -77,17 +77,18 @@ function highlightHoveredElement(event: PointerEvent) {
 }
 
 function selectHoveredElement(event: MouseEvent) {
-    if (!isTrackingJobPostings || !(event.target instanceof HTMLElement)) return
+    if (!isEditingJobElement || !(event.target instanceof HTMLElement)) return
     if (!containsLink(event.target)) return
     event.preventDefault()
     event.stopPropagation()
-    isTrackingJobPostings = false
+    isEditingJobElement = false
     hoveredClassName = event.target.getAttribute('class')
     notifyHoveredClassPorts()
 }
 
 function loadSavedJobElementClass() {
     browser.storage.sync.get(JOB_ELEMENT_CLASS_STORAGE_KEY(location.origin)).then((items) => {
+        if (isEditingJobElement) return
         const storedClassName = items[JOB_ELEMENT_CLASS_STORAGE_KEY(location.origin)]
 
         hoveredClassName = typeof storedClassName === 'string' ? storedClassName : null
@@ -149,6 +150,6 @@ function clearHighlights() {
 
 function notifyHoveredClassPorts() {
     hoveredClassPorts.forEach((port) => {
-        port.postMessage({ className: hoveredClassName, isTracking: isTrackingJobPostings })
+        port.postMessage({ className: hoveredClassName, isEditing: isEditingJobElement })
     })
 }
