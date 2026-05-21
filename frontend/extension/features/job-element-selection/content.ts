@@ -114,7 +114,7 @@ function highlightSimilarElements(target: HTMLElement) {
     document.querySelectorAll<HTMLElement>('[class]').forEach((element) => {
         if (
             (element === target || !target.contains(element)) &&
-            element.getAttribute('class') === className &&
+            hasAllClassNames(element, className) &&
             containsLink(element)
         ) {
             element.setAttribute(HIGHLIGHT_ATTRIBUTE, HIGHLIGHT_DATA_VALUE)
@@ -124,10 +124,17 @@ function highlightSimilarElements(target: HTMLElement) {
 
 function highlightElementsByClassName(className: string) {
     document.querySelectorAll<HTMLElement>('[class]').forEach((element) => {
-        if (element.getAttribute('class') === className && containsLink(element)) {
+        if (hasAllClassNames(element, className) && containsLink(element)) {
             element.setAttribute(HIGHLIGHT_ATTRIBUTE, HIGHLIGHT_DATA_VALUE)
         }
     })
+}
+
+function hasAllClassNames(element: HTMLElement, className: string) {
+    return className
+        .split(/\s+/)
+        .filter(Boolean)
+        .every((className) => element.classList.contains(className))
 }
 
 function injectHoverStyles() {

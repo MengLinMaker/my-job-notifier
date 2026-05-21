@@ -58,7 +58,11 @@ export function JobElementSelection(props: { origin: string; tabId: number }) {
                 </h2>
                 <EditButton isEditing={isEditing} onClick={trackJobPostings} />
             </div>
-            <JobElementClassText jobElementClass={displayedClassName} isEditing={isEditing} />
+            <JobElementClassText
+                jobElementClass={displayedClassName}
+                isEditing={isEditing}
+                onJobElementClassChange={setSelectedClassName}
+            />
         </section>
     )
 }
