@@ -1,15 +1,13 @@
 import * as cheerio from 'cheerio'
 import {
     CANCEL_JOB_TRACKING_MESSAGE,
+    HIGHLIGHT_ATTRIBUTE,
+    HIGHLIGHT_DATA_VALUE,
+    HIGHLIGHT_SELECTOR,
     HOVER_STYLES_ID,
-    HOVERED_ATTRIBUTE,
     HOVERED_CLASS_PORT,
-    HOVERED_DATA_VALUE,
-    HOVERED_SELECTOR,
     JOB_ELEMENT_CLASS_STORAGE_KEY,
     SET_JOB_ELEMENT_CLASS_MESSAGE,
-    SIMILAR_ATTRIBUTE,
-    SIMILAR_SELECTOR,
     START_JOB_TRACKING_MESSAGE,
 } from './contract'
 
@@ -73,19 +71,18 @@ function highlightHoveredElement(event: PointerEvent) {
     hoveredClassName = null
     if (event.target instanceof HTMLElement && containsLink(event.target)) {
         hoveredClassName = event.target.getAttribute('class')
-        event.target.setAttribute(HOVERED_ATTRIBUTE, HOVERED_DATA_VALUE)
         highlightSimilarElements(event.target)
     }
     notifyHoveredClassPorts()
 }
 
 function selectHoveredElement(event: MouseEvent) {
-    const hoveredElement = document.querySelector<HTMLElement>(HOVERED_SELECTOR)
-    if (!isTrackingJobPostings || !hoveredElement) return
+    if (!isTrackingJobPostings || !(event.target instanceof HTMLElement)) return
+    if (!containsLink(event.target)) return
     event.preventDefault()
     event.stopPropagation()
     isTrackingJobPostings = false
-    hoveredClassName = hoveredElement.getAttribute('class')
+    hoveredClassName = event.target.getAttribute('class')
     notifyHoveredClassPorts()
 }
 
@@ -115,12 +112,11 @@ function highlightSimilarElements(target: HTMLElement) {
     if (!className) return
     document.querySelectorAll<HTMLElement>('[class]').forEach((element) => {
         if (
-            element !== target &&
-            !target.contains(element) &&
+            (element === target || !target.contains(element)) &&
             element.getAttribute('class') === className &&
             containsLink(element)
         ) {
-            element.setAttribute(SIMILAR_ATTRIBUTE, HOVERED_DATA_VALUE)
+            element.setAttribute(HIGHLIGHT_ATTRIBUTE, HIGHLIGHT_DATA_VALUE)
         }
     })
 }
@@ -128,7 +124,7 @@ function highlightSimilarElements(target: HTMLElement) {
 function highlightElementsByClassName(className: string) {
     document.querySelectorAll<HTMLElement>('[class]').forEach((element) => {
         if (element.getAttribute('class') === className && containsLink(element)) {
-            element.setAttribute(SIMILAR_ATTRIBUTE, HOVERED_DATA_VALUE)
+            element.setAttribute(HIGHLIGHT_ATTRIBUTE, HIGHLIGHT_DATA_VALUE)
         }
     })
 }
@@ -138,20 +134,16 @@ function injectHoverStyles() {
     const style = document.createElement('style')
     style.id = HOVER_STYLES_ID
     style.textContent = `
-        ${HOVERED_SELECTOR} {
+        ${HIGHLIGHT_SELECTOR} {
             outline: 5px solid #22c55e !important;
-        }
-        ${SIMILAR_SELECTOR} {
-            outline: 2px solid #22c55e !important;
         }
     `
     document.documentElement.append(style)
 }
 
 function clearHighlights() {
-    document.querySelector<HTMLElement>(HOVERED_SELECTOR)?.removeAttribute(HOVERED_ATTRIBUTE)
-    document.querySelectorAll<HTMLElement>(SIMILAR_SELECTOR).forEach((element) => {
-        element.removeAttribute(SIMILAR_ATTRIBUTE)
+    document.querySelectorAll<HTMLElement>(HIGHLIGHT_SELECTOR).forEach((element) => {
+        element.removeAttribute(HIGHLIGHT_ATTRIBUTE)
     })
 }
 
