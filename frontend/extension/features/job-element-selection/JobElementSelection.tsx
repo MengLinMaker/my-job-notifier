@@ -10,9 +10,9 @@ import {
 import { EditButton } from './components/EditButton'
 import { JobElementClassText } from './components/JobElementClassText'
 
-export function JobElementSelection(props: { origin: string | null; tabId: number | null }) {
+export function JobElementSelection(props: { origin: string; tabId: number }) {
     const [selectedClassName, setSelectedClassName] = useSyncedStorageState<string | null>(
-        props.origin ? JOB_ELEMENT_CLASS_STORAGE_KEY(props.origin) : null,
+        JOB_ELEMENT_CLASS_STORAGE_KEY(props.origin),
         null,
     )
     const [hoveredClassName, setHoveredClassName] = useState<string | null>(null)
@@ -20,7 +20,7 @@ export function JobElementSelection(props: { origin: string | null; tabId: numbe
     const displayedClassName = isEditing ? hoveredClassName : selectedClassName
 
     useEffect(() => {
-        if (!props.tabId || isEditing || !selectedClassName) return
+        if (isEditing || !selectedClassName) return
         browser.tabs.sendMessage(props.tabId, {
             type: SET_JOB_ELEMENT_CLASS_MESSAGE,
             className: selectedClassName,
@@ -28,7 +28,6 @@ export function JobElementSelection(props: { origin: string | null; tabId: numbe
     }, [isEditing, selectedClassName, props.tabId])
 
     useEffect(() => {
-        if (!props.tabId) return
         const port = browser.tabs.connect(props.tabId, { name: HOVERED_CLASS_PORT })
         port.onMessage.addListener((message: { className: string | null; isEditing: boolean }) => {
             setIsEditing(message.isEditing)
@@ -40,7 +39,6 @@ export function JobElementSelection(props: { origin: string | null; tabId: numbe
     }, [setSelectedClassName, props.tabId])
 
     function trackJobPostings() {
-        if (!props.tabId) return
         setHoveredClassName(null)
         setIsEditing(!isEditing)
         browser.tabs.sendMessage(props.tabId, {
