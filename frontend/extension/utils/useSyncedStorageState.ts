@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-export function useLocalStorageState<T>(key: string | null, initialValue: T) {
+export function useSyncedStorageState<T>(key: string | null, initialValue: T) {
     const [value, setValue] = useState(initialValue)
 
     useEffect(() => {
@@ -8,14 +8,14 @@ export function useLocalStorageState<T>(key: string | null, initialValue: T) {
             setValue(initialValue)
             return
         }
-        browser.storage.local.get(key).then((items) => {
+        browser.storage.sync.get(key).then((items) => {
             setValue(key in items ? (items[key] as T) : initialValue)
         })
     }, [key, initialValue])
 
     function setStoredValue(nextValue: T) {
         setValue(nextValue)
-        if (key) browser.storage.local.set({ [key]: nextValue })
+        if (key) browser.storage.sync.set({ [key]: nextValue })
     }
 
     return [value, setStoredValue] as const

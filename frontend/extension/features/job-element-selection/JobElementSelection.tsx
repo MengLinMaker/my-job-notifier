@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useLocalStorageState } from '../../utils/useLocalStorageState'
+import { useSyncedStorageState } from '../../utils/useSyncedStorageState'
 import {
     CANCEL_JOB_TRACKING_MESSAGE,
     HOVERED_CLASS_PORT,
@@ -16,7 +16,7 @@ type JobElementSelectionProps = {
 }
 
 export function JobElementSelection({ origin, tabId }: JobElementSelectionProps) {
-    const [selectedClassName, setSelectedClassName] = useLocalStorageState<string | null>(
+    const [selectedClassName, setSelectedClassName] = useSyncedStorageState<string | null>(
         origin ? getJobElementClassStorageKey(origin) : null,
         null,
     )

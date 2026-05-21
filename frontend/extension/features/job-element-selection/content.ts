@@ -90,7 +90,7 @@ function selectHoveredElement(event: MouseEvent) {
 }
 
 function loadSavedJobElementClass() {
-    browser.storage.local.get(getJobElementClassStorageKey(location.origin)).then((items) => {
+    browser.storage.sync.get(getJobElementClassStorageKey(location.origin)).then((items) => {
         const storedClassName = items[getJobElementClassStorageKey(location.origin)]
 
         hoveredClassName = typeof storedClassName === 'string' ? storedClassName : null
