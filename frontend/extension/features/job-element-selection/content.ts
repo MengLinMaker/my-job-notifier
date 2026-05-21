@@ -6,12 +6,12 @@ import {
     HOVERED_CLASS_PORT,
     HOVERED_DATA_VALUE,
     HOVERED_SELECTOR,
+    JOB_ELEMENT_CLASS_STORAGE_KEY,
     SET_JOB_ELEMENT_CLASS_MESSAGE,
     SIMILAR_ATTRIBUTE,
     SIMILAR_SELECTOR,
     START_JOB_TRACKING_MESSAGE,
 } from './contract'
-import { getJobElementClassStorageKey } from './storage'
 
 let hoveredClassName: string | null = null
 let isTrackingJobPostings = false
@@ -90,8 +90,8 @@ function selectHoveredElement(event: MouseEvent) {
 }
 
 function loadSavedJobElementClass() {
-    browser.storage.sync.get(getJobElementClassStorageKey(location.origin)).then((items) => {
-        const storedClassName = items[getJobElementClassStorageKey(location.origin)]
+    browser.storage.sync.get(JOB_ELEMENT_CLASS_STORAGE_KEY(location.origin)).then((items) => {
+        const storedClassName = items[JOB_ELEMENT_CLASS_STORAGE_KEY(location.origin)]
 
         hoveredClassName = typeof storedClassName === 'string' ? storedClassName : null
         applySelectedJobElementClass()

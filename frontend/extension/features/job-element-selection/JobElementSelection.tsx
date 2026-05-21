@@ -3,10 +3,10 @@ import { useSyncedStorageState } from '../../utils/useSyncedStorageState'
 import {
     CANCEL_JOB_TRACKING_MESSAGE,
     HOVERED_CLASS_PORT,
+    JOB_ELEMENT_CLASS_STORAGE_KEY,
     SET_JOB_ELEMENT_CLASS_MESSAGE,
     START_JOB_TRACKING_MESSAGE,
 } from './contract'
-import { getJobElementClassStorageKey } from './storage'
 import { EditButton } from './components/EditButton'
 import { JobElementClassText } from './components/JobElementClassText'
 
@@ -17,7 +17,7 @@ type JobElementSelectionProps = {
 
 export function JobElementSelection({ origin, tabId }: JobElementSelectionProps) {
     const [selectedClassName, setSelectedClassName] = useSyncedStorageState<string | null>(
-        origin ? getJobElementClassStorageKey(origin) : null,
+        origin ? JOB_ELEMENT_CLASS_STORAGE_KEY(origin) : null,
         null,
     )
     const [hoveredClassName, setHoveredClassName] = useState<string | null>(null)
