@@ -15,53 +15,48 @@ let hoveredClassName: string | null = null
 let isEditingJobElement = false
 const hoveredClassPorts = new Set<Browser.runtime.Port>()
 
-export function defineJobElementSelectionContentScript() {
-    return defineContentScript({
-        matches: ['<all_urls>'],
-        main() {
-            const highlightObserver = new MutationObserver(() => {
-                if (!hoveredClassName || isEditingJobElement) return
-                highlightElementsByClassName(hoveredClassName)
-            })
+export function setupJobElementSelectionContent() {
+    const highlightObserver = new MutationObserver(() => {
+        if (!hoveredClassName || isEditingJobElement) return
+        highlightElementsByClassName(hoveredClassName)
+    })
 
-            injectHoverStyles()
-            loadSavedJobElementClass()
-            highlightObserver.observe(document.documentElement, { childList: true, subtree: true })
-            document.addEventListener('pointerover', highlightHoveredElement, { passive: true })
-            document.addEventListener('click', selectHoveredElement, true)
-            browser.runtime.onMessage.addListener((message) => {
-                if (message?.type === CANCEL_JOB_TRACKING_MESSAGE) {
-                    isEditingJobElement = false
-                    hoveredClassName =
-                        typeof message.className === 'string' ? message.className : null
-                    applySelectedJobElementClass()
-                    notifyHoveredClassPorts()
-                    return
-                }
+    injectHoverStyles()
+    loadSavedJobElementClass()
+    highlightObserver.observe(document.documentElement, { childList: true, subtree: true })
+    document.addEventListener('pointerover', highlightHoveredElement, { passive: true })
+    document.addEventListener('click', selectHoveredElement, true)
+    browser.runtime.onMessage.addListener((message) => {
+        if (message?.type === CANCEL_JOB_TRACKING_MESSAGE) {
+            isEditingJobElement = false
+            hoveredClassName =
+                typeof message.className === 'string' ? message.className : null
+            applySelectedJobElementClass()
+            notifyHoveredClassPorts()
+            return
+        }
 
-                if (message?.type === SET_JOB_ELEMENT_CLASS_MESSAGE) {
-                    isEditingJobElement = false
-                    hoveredClassName =
-                        typeof message.className === 'string' ? message.className : null
-                    applySelectedJobElementClass()
-                    notifyHoveredClassPorts()
-                    return
-                }
+        if (message?.type === SET_JOB_ELEMENT_CLASS_MESSAGE) {
+            isEditingJobElement = false
+            hoveredClassName =
+                typeof message.className === 'string' ? message.className : null
+            applySelectedJobElementClass()
+            notifyHoveredClassPorts()
+            return
+        }
 
-                if (message?.type !== START_JOB_TRACKING_MESSAGE) return
-                isEditingJobElement = true
-                hoveredClassName = null
-                clearHighlights()
-                notifyHoveredClassPorts()
-            })
-            browser.runtime.onConnect.addListener((port) => {
-                if (port.name !== HOVERED_CLASS_PORT) return
+        if (message?.type !== START_JOB_TRACKING_MESSAGE) return
+        isEditingJobElement = true
+        hoveredClassName = null
+        clearHighlights()
+        notifyHoveredClassPorts()
+    })
+    browser.runtime.onConnect.addListener((port) => {
+        if (port.name !== HOVERED_CLASS_PORT) return
 
-                hoveredClassPorts.add(port)
-                port.postMessage({ className: hoveredClassName, isEditing: isEditingJobElement })
-                port.onDisconnect.addListener(() => hoveredClassPorts.delete(port))
-            })
-        },
+        hoveredClassPorts.add(port)
+        port.postMessage({ className: hoveredClassName, isEditing: isEditingJobElement })
+        port.onDisconnect.addListener(() => hoveredClassPorts.delete(port))
     })
 }
 
